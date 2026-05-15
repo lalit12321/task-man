@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-geist: 'Inter', system-ui, sans-serif;
+  --font-serif: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body {
+  background-color: #FAFAF7;
+  color: #18181B;
+  font-family: var(--font-geist);
+  font-feature-settings: 'ss01', 'cv11';
+}
+
+::selection {
+  background-color: #C2410C;
+  color: #FFFFFF;
+}
+
+/* Hide scrollbar in webkit but keep functionality */
+.scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+.scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #D4D4D8; border-radius: 3px; }
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #A1A1AA; }
+
+/* Decorative paper-grain texture for sections that need atmosphere */
+.bg-paper {
+  background-color: #FAFAF7;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(24, 24, 27, 0.025) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+/* Diagonal stripe pattern for accent blocks */
+.bg-stripes {
+  background-image: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 8px,
+    rgba(24, 24, 27, 0.04) 8px,
+    rgba(24, 24, 27, 0.04) 9px
+  );
+}
+
+/* Number tabular figures for stats */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Serif display heading helper */
+.font-display {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.05;
+}
+
+/* Button base */
+.btn {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-all duration-150 rounded-lg;
+}
+
+.btn-primary {
+  @apply btn bg-ink-950 text-white hover:bg-ink-800 active:bg-ink-900 disabled:bg-ink-300 disabled:cursor-not-allowed;
+}
+
+.btn-accent {
+  @apply btn bg-accent-700 text-white hover:bg-accent-600 active:bg-accent-700 disabled:opacity-50;
+}
+
+.btn-secondary {
+  @apply btn bg-white border border-ink-200 text-ink-900 hover:bg-ink-50 hover:border-ink-300 disabled:opacity-50;
+}
+
+.btn-ghost {
+  @apply btn text-ink-700 hover:bg-ink-100 hover:text-ink-900;
+}
+
+.btn-danger {
+  @apply btn bg-white border border-ink-200 text-danger hover:bg-red-50 hover:border-red-200;
+}
+
+/* Input */
+.input {
+  @apply w-full px-3.5 py-2.5 bg-white border border-ink-200 rounded-lg text-sm text-ink-900 placeholder:text-ink-400 outline-none transition-all duration-150 focus:border-ink-900 focus:ring-2 focus:ring-ink-900/5;
+}
+
+.label {
+  @apply block text-xs font-medium text-ink-700 mb-1.5 uppercase tracking-wider;
+}
+
+/* Card */
+.card {
+  @apply bg-white border border-ink-200 rounded-xl;
+}
+
+/* Decorative serial number style */
+.serial {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #71717A;
+}
