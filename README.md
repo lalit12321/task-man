@@ -10,6 +10,7 @@ No Firebase. No NextAuth. Just Next.js API routes talking to MongoDB via the nat
 
 - Email/password signup & login (JWT in HTTP-only cookies, bcrypt-hashed passwords)
 - Teams with 6-character invite codes — share to invite, regenerate any time
+- **Admin-only member management** — add, remove, and manage team member roles
 - Tasks: title, description, status (To do / In progress / Done), priority (Low / Medium / High), assignee, due date
 - Kanban-style team view + cross-team "My tasks" view with filters
 - Overview dashboard with stats and focus list
@@ -52,7 +53,7 @@ You have two easy options:
 1. Sign up at [cloud.mongodb.com](https://cloud.mongodb.com).
 2. Create a **free M0 cluster** (any region is fine — pick one close to you).
 3. **Database Access** → **Add new database user** → username + password (save these).
-4. **Network Access** → **Add IP Address** → for development click **Allow Access From Anywhere** (`0.0.0.0/0`). For production-only Railway, you can paste the Railway egress IPs instead — but `0.0.0.0/0` is the simplest path.
+4. **Network Access** → **Add IP Address** → for development click **Allow Access From Anywhere** (`0.0.0.0/0`). For production-only Railway, you can paste the Railway egress IPs instead.
 5. **Database** (top of left sidebar) → **Connect** → **Drivers** → **Node.js** → copy the connection string. It looks like:
    ```
    mongodb+srv://USERNAME:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
@@ -150,7 +151,10 @@ teamflow/
 │   │   │   └── [id]/
 │   │   │       ├── route.ts            # GET, DELETE
 │   │   │       ├── leave/              # POST
-│   │   │       └── regenerate-code/    # POST (owner only)
+│   │   │       ├── regenerate-code/    # POST (owner only)
+│   │   │       └── members/
+│   │   │           ├── route.ts        # POST (add), DELETE (remove) — admin only
+│   │   │           └── update-role/    # PATCH — update member role — admin only
 │   │   └── tasks/
 │   │       ├── route.ts        # GET (?teamId=), POST
 │   │       └── [id]/route.ts   # PATCH, DELETE
@@ -172,7 +176,9 @@ teamflow/
 │   ├── auth.ts                 # JWT sign/verify, cookies
 │   ├── api.ts                  # client fetch helper
 │   ├── serialize.ts            # MongoDB doc → JSON
+│   ├── members.ts              # client-side member management helpers
 │   ├── teams.ts, tasks.ts      # client-side data fetching
+│   ├── access.ts               # authorization helpers (requireTeamAdmin, etc.)
 │   └── types.ts                # shared types
 ├── middleware.ts               # redirect unauth'd users from /dashboard
 ├── .env.example
@@ -220,14 +226,65 @@ Indexes (created automatically on first signup):
 
 ## 6. How authentication works
 
-1. **Signup/Login** — `/api/auth/signup` and `/api/auth/login` hash/verify the password with bcrypt, sign a JWT containing `{ uid, email, displayName }`, and set it as an HTTP-only cookie (`teamflow_token`, `sameSite=lax`, `secure` in production, 30-day expiry).
+1. **Signup/Login** — `/api/auth/signup` and `/api/auth/login` hash/verify the password with bcrypt, sign a JWT containing `{ uid, email, displayName }`, and set it as an HTTP-only cookie.
 2. **Every API request** carries the cookie. Routes call `requireSession()` from `lib/auth.ts` which reads and verifies the JWT — if invalid, the route returns 401.
-3. **Page protection** — `middleware.ts` checks for the cookie on `/dashboard/*` and redirects to `/login` if it's missing. The middleware doesn't verify the signature (that would require the JWT secret in the edge runtime); the API routes do real verification.
+3. **Page protection** — `middleware.ts` checks for the cookie on `/dashboard/*` and redirects to `/login` if it's missing.
 4. **Logout** — `/api/auth/logout` clears the cookie.
 
 ---
 
-## 7. Common issues
+## 7. Team member management (Admin-only feature)
+
+Team admins can add, remove, and manage member roles using three endpoints:
+
+### Add a member
+**POST** `/api/teams/[id]/members`
+```json
+{
+  "email": "newmember@example.com",
+  "role": "member"  // optional, defaults to 'member'
+}
+```
+Response: `{ ok: true, team: {...}, message: "..." }`
+
+### Remove a member
+**DELETE** `/api/teams/[id]/members`
+```json
+{
+  "email": "member@example.com"
+}
+```
+Response: `{ ok: true, team: {...}, message: "..." }`
+Note: Cannot remove the last admin from the team.
+
+### Update member role
+**PATCH** `/api/teams/[id]/members/update-role`
+```json
+{
+  "email": "member@example.com",
+  "role": "admin"  // or 'member'
+}
+```
+Response: `{ ok: true, team: {...}, message: "..." }`
+Note: Cannot downgrade the only admin to a regular member.
+
+### Client-side usage
+```typescript
+import { addTeamMember, removeTeamMember, updateTeamMemberRole } from '@/lib/members';
+
+// Add a member
+await addTeamMember(teamId, { email: 'user@example.com', role: 'admin' });
+
+// Remove a member
+await removeTeamMember(teamId, { email: 'user@example.com' });
+
+// Update role
+await updateTeamMemberRole(teamId, { email: 'user@example.com', role: 'member' });
+```
+
+---
+
+## 8. Common issues
 
 | Problem | Fix |
 |---|---|
@@ -236,6 +293,7 @@ Indexes (created automatically on first signup):
 | `MongoServerSelectionError` from anywhere except your local machine | Atlas Network Access — add `0.0.0.0/0` or the Railway IPs |
 | Login works but `/dashboard` redirects back to `/login` | `JWT_SECRET` is different between the request and the verifier — make sure it's set on Railway and not changing between deploys |
 | Build fails on Railway | Check that `MONGODB_URI` and `JWT_SECRET` env vars are set |
+| Cannot add/remove members | You must be a team admin to manage members |
 
 ---
 
